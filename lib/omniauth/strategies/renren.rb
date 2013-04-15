@@ -37,6 +37,7 @@ module OmniAuth
         params[:format] = 'json'
         params[:v] = '1.0'
         params[:uids] = session_key['user']['id']
+        params[:fields] = 'uid,name,sex,birthday,hometown_location'
         params[:session_key] = session_key['renren_token']['session_key']
         params[:sig] = Digest::MD5.hexdigest(params.map{|k,v| "#{k}=#{v}"}.sort.join + client.secret)
         params
@@ -54,12 +55,15 @@ module OmniAuth
       end
 
       def build_access_token
-        if renren_session.nil? || renren_session.empty?
-          verifier = request.params['code']
-          self.access_token = client.auth_code.get_token(verifier, {:redirect_uri => callback_url}.merge(options))
-          self.access_token
+        if self.access_token.nil?
+          if renren_session.nil? || renren_session.empty?
+            verifier = request.params['code']
+            client.auth_code.get_token(verifier, {:redirect_uri => callback_url}.merge(options))
+          else
+            ::OAuth2::AccessToken.new(client, renren_session['access_token'])
+          end
         else
-          self.access_token = ::OAuth2::AccessToken.new(client, renren_session['access_token'])
+          self.access_token
         end
       end
 
